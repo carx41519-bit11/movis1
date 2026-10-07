@@ -291,6 +291,40 @@ class RiceTests(unittest.TestCase):
         self.assertEqual(self.action(aid)['comparison'][0]['count'],5)
         self.assertEqual(self.stock()[0],20)
 
+    def test_new_product_retries_permissions_and_duplicate_identifiers(self):
+        payload = self.req(name='Dinorado', sku='RICE-DIN-25')
+        with self.assertRaises(Error):
+            self.r.product(self.staff, payload)
+        result = self.r.product(self.admin, payload)
+        self.assertEqual(self.r.product(self.admin, payload), result)
+        pid = result['product_id']
+        product = next(p for p in self.r.state(self.staff)['products'] if p['id'] == pid)
+        self.assertEqual((product['name'], product['quantity'], product['model_class']), ('Dinorado', 0, 'dinorado'))
+        with self.assertRaises(Error):
+            self.r.product(self.admin, self.req(name='Other rice', sku='rice-din-25'))
+        with self.assertRaises(Error):
+            self.r.product(self.admin, self.req(name='dinorado', sku='NEW-SKU'))
+        with self.assertRaises(Error):
+            self.r.product(self.admin, self.req(name='Other rice', sku='NEW-SKU', model_class='DINORADO'))
+        self.r.product(self.admin, {'product_id': pid, 'sku': 'DIN-25', 'description': 'Premium rice', 'model_class': 'dinorado'})
+        self.assertEqual(self.r.report(self.admin, 'inventory')['rows'][-1]['sku'], 'DIN-25')
+        with self.assertRaises(Error):
+            self.r.product(self.admin, {'product_id': 999, 'sku': 'X', 'description': 'X', 'model_class': 'x'})
+
+    def test_four_products_can_be_scanned_stocked_and_fully_counted(self):
+        pid = self.r.product(self.admin, self.req(name='Dinorado', sku='RICE-DIN-25'))['product_id']
+        aid = self.r.open(self.staff, self.req(kind='stock-in'))['action_id']
+        self.assertEqual([r['product_id'] for r in self.action(aid)['snapshot']], [1, 2, 3, pid])
+        self.image(aid, {1: 1, 2: 1, 3: 1, pid: 1})
+        self.r.submit(self.staff, self.complete(aid))
+        self.assertEqual(self.stock(), [21, 21, 21, 1])
+        aid = self.r.open(self.staff, self.req(kind='count'))['action_id']
+        self.image(aid, {1: 21, 2: 21, 3: 21, pid: 1})
+        self.r.finish(self.staff, self.complete(aid, full_counts={'1': True, '2': True, '3': True, str(pid): True}))
+        self.assertEqual(len(self.action(aid)['comparison']), 4)
+        self.assertEqual(self.stock(), [21, 21, 21, 1])
+
+
 
 if __name__=='__main__':
     unittest.main()

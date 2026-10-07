@@ -5,6 +5,7 @@ Legacy tables remain intact; supported balances migrate once by exact rice name/
 import base64
 import hashlib
 import json
+import re
 import time
 import uuid
 from io import BytesIO
@@ -132,8 +133,8 @@ class RiceWorkflow:
             kind = data.get('kind')
             if kind not in KINDS:
                 raise Error('Select an allowed transaction before capture')
-            ids = data.get('products', [1, 2, 3])
-            if not isinstance(ids, list) or not ids or len(ids) > 3 or any(type(x) is not int for x in ids) or len(set(ids)) != len(ids):
+            ids = data.get('products', [r['id'] for r in c.execute('SELECT id FROM rice_products ORDER BY id')])
+            if not isinstance(ids, list) or not ids or any(type(x) is not int for x in ids) or len(set(ids)) != len(ids):
                 raise Error('Choose distinct rice products')
             snapshot = self.snapshot(c, ids)
             aid = str(uuid.uuid4())
@@ -207,7 +208,7 @@ class RiceWorkflow:
             return {'image_id': iid}
 
     def checked(self, lines, allowed_ids, positive=False):
-        if not isinstance(lines, list) or len(lines) > 3:
+        if not isinstance(lines, list) or len(lines) > len(allowed_ids):
             raise Error('Provide checked rice quantities')
         totals = {}
         for line in lines:
@@ -420,8 +421,32 @@ class RiceWorkflow:
         with self.s.connection() as c:
             c.execute('BEGIN IMMEDIATE')
             self.allowed(c, user, admin=True)
-            pid = integer(data.get('product_id'), 1)
-            if pid not in (1, 2, 3):
-                raise Error('The study covers three selected rice products')
-            c.execute('UPDATE rice_products SET sku=?,description=?,model_class=? WHERE id=?', (required(data, 'sku'), required(data, 'description'), required(data, 'model_class'), pid))
-            return {'message': 'Product details updated'}
+            creating = 'product_id' not in data
+            if creating:
+                key, digest, old = self.retry(c, user, data, 'create-product')
+                if old is not None:
+                    return old
+                name = required(data, 'name')
+                label = data.get('model_class')
+                if label is None or label == '':
+                    label = re.sub(r'[^a-z0-9]+', '_', name.lower()).strip('_')
+                cls = required({'model_class': label}, 'model_class')
+                description = data.get('description') or '25 kg rice sack'
+                description = required({'description': description}, 'description')
+                pid = c.execute('SELECT COALESCE(MAX(id),0)+1 FROM rice_products').fetchone()[0]
+                if c.execute('SELECT id FROM rice_products WHERE lower(name)=lower(?)', (name,)).fetchone():
+                    raise Error('A rice product with this name already exists', 409)
+            else:
+                pid = integer(data.get('product_id'), 1)
+                if not c.execute('SELECT id FROM rice_products WHERE id=?', (pid,)).fetchone():
+                    raise Error('Rice product not found', 404)
+                cls = required(data, 'model_class')
+                description = required(data, 'description')
+            sku = required(data, 'sku')
+            if c.execute('SELECT id FROM rice_products WHERE id<>? AND (lower(sku)=lower(?) OR lower(model_class)=lower(?))', (pid, sku, cls)).fetchone():
+                raise Error('SKU or scan class label is already used by another product', 409)
+            if creating:
+                c.execute('INSERT INTO rice_products(id,sku,name,model_class,description) VALUES(?,?,?,?,?)', (pid, sku, name, cls, description))
+                return self.save(c, key, digest, {'message': 'Rice product added', 'product_id': pid})
+            c.execute('UPDATE rice_products SET sku=?,description=?,model_class=? WHERE id=?', (sku, description, cls, pid))
+            return {'message': 'Product details updated', 'product_id': pid}
