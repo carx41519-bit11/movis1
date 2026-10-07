@@ -1,7 +1,7 @@
 (function(){
   'use strict';
   var dark=false;
-  try{var saved=localStorage.getItem('movis-theme');dark=saved?saved==='dark':window.matchMedia('(prefers-color-scheme: dark)').matches;}catch(e){}
+  try{dark=localStorage.getItem('movis-theme')==='dark';}catch(e){}
   function apply(){
     document.documentElement.dataset.theme=dark?'dark':'light';
     document.querySelectorAll('.theme-toggle').forEach(function(button){
@@ -14,19 +14,10 @@
   document.addEventListener('DOMContentLoaded',function(){
     apply();
     document.querySelectorAll('.theme-toggle').forEach(function(button){
-      button.addEventListener('click',function(ev){
-        var root=document.documentElement;
-        function toggle(){dark=!dark;try{localStorage.setItem('movis-theme',dark?'dark':'light');}catch(e){}apply();}
-        if(window.matchMedia('(prefers-reduced-motion: reduce)').matches){toggle();return;}
-        if(document.startViewTransition){
-          var r=button.getBoundingClientRect();
-          root.style.setProperty('--tx',(ev.clientX||r.left+r.width/2)+'px');
-          root.style.setProperty('--ty',(ev.clientY||r.top+r.height/2)+'px');
-          document.startViewTransition(toggle);
-        }else{
-          root.classList.add('theme-fade');toggle();
-          setTimeout(function(){root.classList.remove('theme-fade');},450);
-        }
+      button.addEventListener('click',function(){
+        dark=!dark;
+        try{localStorage.setItem('movis-theme',dark?'dark':'light');}catch(e){}
+        apply();
       });
     });
   });
@@ -102,7 +93,7 @@ $('content').addEventListener('click',e=>{const b=e.target.closest('button');if(
   if(b.dataset.product){const p=state.products.find(p=>p.id===Number(b.dataset.product));dialog(p.name,'<form id="product"><label>SKU<input name="sku" value="'+esc(p.sku)+'" required></label><label>Description<input name="description" value="'+esc(p.description)+'" required></label><label>YOLO class label<input name="model_class" value="'+esc(p.model_class)+'" required></label><button class="primary">Save details</button></form>');$('product').onsubmit=ev=>{ev.preventDefault();run(async()=>{await api('/v2/product',{...Object.fromEntries(new FormData(ev.target)),product_id:p.id});$('detail').close();await refresh();});};}
 });});
 $('close-detail').onclick=()=>$('detail').close();
-document.querySelectorAll('[data-page]').forEach(b=>b.onclick=()=>{page=b.dataset.page;render();});
+document.querySelectorAll('[data-page]').forEach(b=>b.onclick=()=>{if(page===b.dataset.page)return;page=b.dataset.page;render();if(!matchMedia('(prefers-reduced-motion: reduce)').matches&&$('content').animate){$('content').getAnimations().forEach(a=>a.cancel());$('content').animate([{opacity:0,transform:'translateY(10px)'},{opacity:1,transform:'translateY(0)'}],{duration:280,easing:'cubic-bezier(.22,1,.36,1)'});}});
 $('refresh').onclick=()=>run(refresh);
 $('logout').onclick=()=>run(async()=>{await api('/logout',{});showLogin();});
 $('login-form').onsubmit=async e=>{e.preventDefault();const submit=e.target.querySelector('button[type=submit]');if(submit.disabled)return;submit.disabled=true;submit.textContent='Signing in…';$('login-error').textContent='';try{await api('/login',{username:$('username').value.trim(),password:$('password').value,client:'web'});$('password').value='';await refresh();}catch(e){$('login-error').textContent=e.message;}finally{submit.disabled=false;submit.innerHTML='Sign in <span aria-hidden="true">→</span>';}};
