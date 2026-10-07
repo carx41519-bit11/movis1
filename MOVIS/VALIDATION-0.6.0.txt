@@ -1,0 +1,17 @@
+MOVIS 0.6.0 verification
+
+Reference: chapter123.pdf, the MOVIS paper supplied on 7 October 2026.
+Maintained source: Documents/Codex/2026-10-01/cre/outputs/MOVIS.
+
+Full suite before the final report/migration additions: 88 tests, 60 passed and 28 PostgreSQL tests skipped in that run.
+Final SQLite workflow suite: all 16 tests passed.
+Disposable PostgreSQL 18: all 15 initial workflow tests passed. The later complete-report test, new-workflow SQLite-to-PostgreSQL migration test and legacy migration test also passed (18 PostgreSQL checks across those runs).
+Migration preserves balances, images and unchanged submission outcomes and rejects a nonempty destination.
+The count-metric helper passed a synthetic arithmetic check; this is not a measured model result.
+
+Browser checks with isolated domain-service fixtures: full-count correction, owner inspection decisions, account permissions, report download, expected request fields, raw/checked scan review, desktop and 390px mobile layout. No JavaScript errors in these checks. Phone/server HTTP integration was tested separately in backend tests; the local browser preview used request interception due sandbox network isolation.
+
+Android sources compiled against API 35 with Java 17 output. D8 conversion passed. Final APK package/version: com.movis.warehouse, versionCode 6, versionName 0.6.0, min API 26, target API 35. Launcher: RiceActivity. In-app CameraActivity is not exported. Camera and Internet permissions present. APK v2 and v3 signatures verified. Debug signer reused from the earlier test build.
+Windows sandbox native ZIP finalization failed; checked resource entries were reconstructed into an aligned ZIP before signing. This is a debug-signed test APK. Normal Gradle/Android Studio builds, installation and real-device camera behavior remain unverified.
+
+No real trained rice model, warehouse detection results or accuracy/speed claims are supplied. The user will train later. Demo detections are explicitly synthetic. No live deployment or production database changes were performed.

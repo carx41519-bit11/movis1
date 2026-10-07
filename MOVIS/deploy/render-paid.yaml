@@ -1,0 +1,26 @@
+# OPTIONAL PAID ALTERNATIVE ONLY. Not the selected free deployment.
+# Copy to render.yaml only after choosing and approving paid Render hosting.
+# This configuration creates PAID compute and a persistent disk; confirm cost in Render.
+services:
+  - type: web
+    name: movis
+    runtime: python
+    plan: starter
+    buildCommand: pip install -r backend/requirements-cloud.txt
+    startCommand: cd backend && gunicorn 'webapp:create_app()' --bind 0.0.0.0:$PORT --workers 1 --threads 4 --timeout 120 --access-logfile - --error-logfile -
+    healthCheckPath: /health
+    disk:
+      name: movis-data
+      mountPath: /var/data
+      sizeGB: 1
+    envVars:
+      - key: MOVIS_DB_PATH
+        value: /var/data/movis.db
+      - key: MOVIS_MODE
+        value: demo
+      - key: MOVIS_HTTPS_HOSTING
+        value: "1"
+      - key: MOVIS_ADMIN_USERNAME
+        sync: false
+      - key: MOVIS_ADMIN_PASSWORD
+        sync: false

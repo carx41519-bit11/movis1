@@ -1,0 +1,9 @@
+# Use real labeled Elder Jay images; keep related images in the same split.
+path: ./rice_dataset
+train: images/train
+val: images/val
+test: images/test
+names:
+  0: sinandomeng
+  1: jasmine
+  2: buko_pandan

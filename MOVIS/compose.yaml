@@ -1,0 +1,27 @@
+services:
+  db:
+    image: postgres:17
+    environment:
+      POSTGRES_DB: movis
+      POSTGRES_USER: movis
+      POSTGRES_PASSWORD: ${MOVIS_LOCAL_DB_PASSWORD:?Set a private local database password}
+    volumes:
+      - movis-postgres:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U movis -d movis"]
+      interval: 5s
+      retries: 10
+  app:
+    build: .
+    ports: ["8080:8080"]
+    environment:
+      DATABASE_URL: postgresql://movis:${MOVIS_LOCAL_DB_PASSWORD}@db:5432/movis
+      MOVIS_ADMIN_USERNAME: ${MOVIS_ADMIN_USERNAME:?Set your admin username}
+      MOVIS_ADMIN_PASSWORD: ${MOVIS_ADMIN_PASSWORD:?Set your private admin password}
+      MOVIS_MODE: demo
+      MOVIS_SEED_DEMO: "1"
+    depends_on:
+      db:
+        condition: service_healthy
+volumes:
+  movis-postgres:

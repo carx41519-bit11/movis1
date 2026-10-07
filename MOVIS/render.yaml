@@ -1,0 +1,19 @@
+services:
+  - type: web
+    name: movis
+    runtime: docker
+    plan: free
+    healthCheckPath: /health
+    envVars:
+      - key: DATABASE_URL
+        sync: false
+      - key: MOVIS_ADMIN_USERNAME
+        sync: false
+      - key: MOVIS_ADMIN_PASSWORD
+        sync: false
+      - key: MOVIS_MODE
+        value: demo
+      - key: MOVIS_SEED_DEMO
+        value: "1"
+      - key: MOVIS_HTTPS_HOSTING
+        value: "1"

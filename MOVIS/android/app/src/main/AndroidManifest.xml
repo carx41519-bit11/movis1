@@ -1,0 +1,13 @@
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.CAMERA" />
+    <uses-feature android:name="android.hardware.camera" android:required="false" />
+    <queries><intent><action android:name="android.media.action.IMAGE_CAPTURE" /></intent></queries>
+    <application android:label="MOVIS" android:theme="@android:style/Theme.Material.Light.NoActionBar" android:allowBackup="false" android:usesCleartextTraffic="false">
+        <activity android:name=".RiceActivity" android:exported="true" android:configChanges="orientation|screenSize">
+            <intent-filter><action android:name="android.intent.action.MAIN" /><category android:name="android.intent.category.LAUNCHER" /></intent-filter>
+        </activity>
+        <activity android:name=".CameraActivity" android:exported="false" android:screenOrientation="portrait" />
+        <provider android:name=".PhotoProvider" android:authorities="com.movis.warehouse.photos" android:exported="false" android:grantUriPermissions="true" />
+    </application>
+</manifest>

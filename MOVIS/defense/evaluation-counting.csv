@@ -1,0 +1,1 @@
+sample_id,split,capture_session,class_name,lighting,distance,overlap,annotated_visible_count,predicted_visible_count,user_verified_count,complete_physical_count,mode,model_version,processing_ms,client_round_trip_ms

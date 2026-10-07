@@ -1,0 +1,30 @@
+plugins { id 'com.android.application' }
+android {
+    namespace 'com.movis.warehouse'
+    compileSdk 35
+    defaultConfig {
+        applicationId 'com.movis.warehouse'
+        minSdk 26
+        targetSdk 35
+        versionCode 6
+        versionName '0.6.0'
+    }
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+    def signingFile = rootProject.file('keystore.properties')
+    if (signingFile.exists()) {
+        def signingValues = new Properties()
+        signingFile.withInputStream { signingValues.load(it) }
+        signingConfigs {
+            release {
+                storeFile rootProject.file(signingValues['storeFile'])
+                storePassword signingValues['storePassword']
+                keyAlias signingValues['keyAlias']
+                keyPassword signingValues['keyPassword']
+            }
+        }
+        buildTypes { release { signingConfig signingConfigs.release } }
+    }
+}
