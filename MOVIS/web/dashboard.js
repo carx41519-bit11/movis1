@@ -1,7 +1,7 @@
 (function(){
   'use strict';
   var dark=false;
-  try{dark=localStorage.getItem('movis-theme')==='dark';}catch(e){}
+  try{var saved=localStorage.getItem('movis-theme');dark=saved?saved==='dark':window.matchMedia('(prefers-color-scheme: dark)').matches;}catch(e){}
   function apply(){
     document.documentElement.dataset.theme=dark?'dark':'light';
     document.querySelectorAll('.theme-toggle').forEach(function(button){
@@ -14,10 +14,19 @@
   document.addEventListener('DOMContentLoaded',function(){
     apply();
     document.querySelectorAll('.theme-toggle').forEach(function(button){
-      button.addEventListener('click',function(){
-        dark=!dark;
-        try{localStorage.setItem('movis-theme',dark?'dark':'light');}catch(e){}
-        apply();
+      button.addEventListener('click',function(ev){
+        var root=document.documentElement;
+        function toggle(){dark=!dark;try{localStorage.setItem('movis-theme',dark?'dark':'light');}catch(e){}apply();}
+        if(window.matchMedia('(prefers-reduced-motion: reduce)').matches){toggle();return;}
+        if(document.startViewTransition){
+          var r=button.getBoundingClientRect();
+          root.style.setProperty('--tx',(ev.clientX||r.left+r.width/2)+'px');
+          root.style.setProperty('--ty',(ev.clientY||r.top+r.height/2)+'px');
+          document.startViewTransition(toggle);
+        }else{
+          root.classList.add('theme-fade');toggle();
+          setTimeout(function(){root.classList.remove('theme-fade');},450);
+        }
       });
     });
   });
