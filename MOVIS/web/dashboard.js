@@ -1,3 +1,31 @@
+(function(){
+  'use strict';
+  var dark=false;
+  try{var saved=localStorage.getItem('movis-theme');dark=saved?saved==='dark':window.matchMedia('(prefers-color-scheme: dark)').matches;}catch(e){}
+  function apply(){
+    document.documentElement.dataset.theme=dark?'dark':'light';
+    document.querySelectorAll('.theme-toggle').forEach(function(button){
+      button.setAttribute('aria-pressed',String(dark));
+      button.setAttribute('aria-label',dark?'Turn on light mode':'Turn on dark mode');
+      button.querySelector('span').textContent=dark?'Light mode':'Dark mode';
+    });
+  }
+  apply();
+  document.addEventListener('DOMContentLoaded',function(){
+    apply();
+    document.querySelectorAll('.theme-toggle').forEach(function(button){
+      button.addEventListener('click',function(){
+        dark=!dark;
+        try{localStorage.setItem('movis-theme',dark?'dark':'light');}catch(e){}
+        apply();
+      });
+    });
+  });
+  window.addEventListener('storage',function(event){
+    if(event.key==='movis-theme'){dark=event.newValue==='dark';apply();}
+  });
+})();
+
 'use strict';
 let state, page='overview', busy=false, idle=Date.now();
 const requestKeys=new Map();
